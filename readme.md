@@ -174,7 +174,7 @@ export default Start;
 
 允许你更新状态
 
-注意：state只是可读的，不应该
+注意：state只是可读的，不应该直接给它赋值
 
 ```react
 import React, { useReducer } from 'react';
@@ -204,6 +204,216 @@ function CalculateNumber() {
 }
 
 export default CalculateNumber;
+
+```
+
+
+
+## useDeferredValue
+
+延迟渲染，类似防抖，推迟渲染
+
+```react
+import React from 'react';
+import { useState } from 'react';
+import List from './List';
+function Debouse() {
+  const [value, setValue] = useState('');
+
+  return (
+    <>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
+      <List value={value}></List>
+    </>
+  );
+}
+
+export default Debouse;
+```
+
+```react
+import React from 'react';
+import { useDeferredValue } from 'react';
+import { useMemo } from 'react';
+
+function List({ value }) {
+  const LIST_SIZE = 20000;
+  const deferredValue = useDeferredValue(value);
+  const list = useMemo(() => {
+    const l = [];
+    for (let i = 0; i < LIST_SIZE; i++) {
+      l.push(<div key={i}>{deferredValue}</div>);
+    }
+    return l;
+  }, [deferredValue]);
+  return list;
+}
+
+export default List;
+```
+
+## useId
+
+用于生成为了可标识的id，注意不能通过选择器选择这个id
+
+```react
+import React from 'react';
+import { useId } from 'react';
+
+export default function Email() {
+  const id = useId();
+  return (
+    <>
+      <label htmlFor={id} style={{ display: 'inline' }}>
+        Email
+      </label>
+      <input id={id} type="email" />
+    </>
+  );
+}
+```
+
+## useRef
+
+不仅可以用来获取dom元素和还可以保存之前的状态
+
+**更改 ref 不会触发重新渲染**
+
+useRef的操作不要写在渲染里面，即return里面，写在useEffect和事件处理函数里面
+
+- 操作dom
+
+```jsx
+import React from 'react';
+import { useState, useRef } from 'react';
+
+export default function GetDom() {
+  const [input, setInput] = useState('');
+  const inputRef = useRef();
+  const handleFocus = () => {
+    inputRef.current.focus();
+  };
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+      />
+      <div>my name is {input}</div>
+      <button onClick={handleFocus}>聚焦</button>
+    </>
+  );
+}
+```
+
+
+
+- 存储状态
+
+```jsx
+import React from 'react';
+import { useState, useRef } from 'react';
+
+export default function GetDom() {
+  const [input, setInput] = useState('');
+  const inputRef = useRef();
+  const handleFocus = () => {
+    inputRef.current.focus();
+  };
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+      />
+      <div>my name is {input}</div>
+      <button onClick={handleFocus}>聚焦</button>
+    </>
+  );
+}
+```
+
+
+
+- 父组件操作子组件中的dom , 需要使用 forwardRef
+
+```react
+import { forwardRef, useRef } from 'react';
+
+const MyInput = forwardRef((props, ref) => {
+  return <input {...props} ref={ref} />;
+});
+
+export default function Form() {
+  const inputRef = useRef(null);
+
+  function handleClick() {
+    inputRef.current.focus();
+  }
+
+  return (
+    <>
+      <MyInput ref={inputRef} />
+      <button onClick={handleClick}>
+        Focus the input
+      </button>
+    </>
+  );
+}
+
+```
+
+
+
+# useTransition
+
+`useTransition`是一个 React Hook，可让您在不阻塞 UI 的情况下更新状态。
+
+在处理性能和数据多的时候使用，一般不使用
+
+使用方式
+
+```react
+import React from 'react';
+import { useTransition } from 'react';
+import { useState } from 'react';
+
+export default function Transition() {
+  const [isPending, startTransition] = useTransition();
+  const [input, setInput] = useState('');
+  const [list, setList] = useState([]);
+  const handleChange = (e) => {
+    setInput(e.target.value);
+      //使用startTransition 包裹你想要低优先级的渲染
+    startTransition(() => {
+      let l = [];
+      for (let i = 0; i < 20000; i++) {
+        l.push(e.target.value);
+      }
+      setList(l);
+    });
+  };
+  return (
+    <>
+      <input type="text" value={input} onChange={handleChange} />
+      {isPending ? (
+        <h2>loading...</h2>
+      ) : (
+        list.map((item, index) => {
+          return <div key={index}>{item}</div>;
+        })
+      )}
+    </>
+  );
+}
 
 ```
 
